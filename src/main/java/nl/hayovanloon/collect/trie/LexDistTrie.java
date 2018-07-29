@@ -218,10 +218,11 @@ public class LexDistTrie implements Trie<String>, Serializable {
 
   @Override
   public Iterator<String> iterator() {
-    return getAllParts().iterator();
+    // TODO: use internal state and recursion
+    return getAllWords().iterator();
   }
 
-  private List<String> getAllParts() {
+  private List<String> getAllWords() {
     final String base = new String(value);
     if (cons.isEmpty()) {
       return Collections.singletonList(base);
@@ -231,7 +232,7 @@ public class LexDistTrie implements Trie<String>, Serializable {
         xs.add(base);
       }
       for (LexDistTrie trie : cons) {
-        for (String s : trie.getAllParts()) {
+        for (String s : trie.getAllWords()) {
           xs.add(base + s);
         }
       }
@@ -271,10 +272,10 @@ public class LexDistTrie implements Trie<String>, Serializable {
     if (i < a.length) {
       a[i] = null;
     } else if (iter.hasNext()) {
-      final T[] bs = (T[]) new String[size()];
-      System.arraycopy(a, 0, bs, 0, i + 1);
+      final T[] b = (T[]) new String[size()];
+      System.arraycopy(a, 0, b, 0, i + 1);
 
-      return bs;
+      return b;
     }
 
     return a;
