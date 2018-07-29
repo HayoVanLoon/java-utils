@@ -53,7 +53,7 @@ public class LexDistTrie implements Trie<String>, Serializable {
 
   @Override
   public boolean remove(Object o) {
-    throw new UnsupportedOperationException("not supported (yet");
+    throw new UnsupportedOperationException("not supported (yet)");
   }
 
   @Override
