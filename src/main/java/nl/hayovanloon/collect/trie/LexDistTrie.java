@@ -4,8 +4,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -50,23 +51,52 @@ public class LexDistTrie implements Trie<String>, Serializable {
     return add(xs.toCharArray());
   }
 
-  public boolean add(char[] xs) {
+  @Override
+  public boolean remove(Object o) {
+    throw new UnsupportedOperationException("not supported (yet");
+  }
+
+  @Override
+  public boolean containsAll(Collection<?> c) {
+    // TODO: optimisation candidate
+    for (Object o : c) {
+      if (!contains(o)) return false;
+    }
+    return true;
+  }
+
+  @Override
+  public boolean addAll(Collection<? extends String> c) {
+    return false;
+  }
+
+  @Override
+  public boolean removeAll(Collection<?> c) {
+    return false;
+  }
+
+  @Override
+  public boolean retainAll(Collection<?> c) {
+    return false;
+  }
+
+  private boolean add(char[] xs) {
     if (xs.length == 0) {
       return false;
     } else {
       // fast-forward to first difference
       int i = firstDiff(xs, value, 0, 0);
-      char[] ys = Arrays.copyOfRange(xs, i, xs.length);
+      char[] ys = new char[xs.length - i];
 
       if (ys.length == 0) {
         end = i == value.length;
         return end;
+      } else {
+        System.arraycopy(xs, i, ys, 0, xs.length - i);
       }
 
       if (i == value.length) {
-        final Iterator<LexDistTrie> iter = cons.listIterator();
-        while (iter.hasNext()) {
-          final LexDistTrie trie = iter.next();
+        for (LexDistTrie trie : cons) {
           if (trie.value[0] == ys[0]) {
             return trie.add(ys);
           }
@@ -82,7 +112,8 @@ public class LexDistTrie implements Trie<String>, Serializable {
   }
 
   private void split(char[] ys, int p) {
-    final char[] remainder = Arrays.copyOfRange(value, p, value.length);
+    final char[] remainder = new char[value.length - p];
+    System.arraycopy(value, p, remainder, 0, value.length - p);
     final LexDistTrie oldNode = new LexDistTrie(remainder, end, cons);
     final LexDistTrie newNode = new LexDistTrie(ys);
 
@@ -95,39 +126,39 @@ public class LexDistTrie implements Trie<String>, Serializable {
 
   @Override
   public Iterable<String> fuzzyMatches(String xs, int maxDist) {
-    final List<String> matches = new ArrayList<>();
-    for (StringBuilder sb : fuzzyMatches(xs.toCharArray(), 0, 0, maxDist)) {
-      matches.add(sb.toString());
-    }
-    return matches;
+    return fuzzyMatches(xs.toCharArray(), 0, 0, maxDist);
   }
 
-  private Set<StringBuilder> fuzzyMatches(char[] xs, int p, int offset, int maxDist) {
+  private Set<String> fuzzyMatches(char[] xs, int p, int offset, int maxDist) {
     if (maxDist < 0) {
       return new TreeSet<>();
     }
 
-    final Set<StringBuilder> matches =
-        new TreeSet<>(Comparator.comparing(StringBuilder::toString));
+    final Set<String> matches = new TreeSet<>();
 
     final int i = firstDiff(xs, value, p, offset);
 
     if (end && p + i == xs.length && value.length - offset - i <= maxDist) {
-      final StringBuilder sb = new StringBuilder().append(value);
-      matches.add(sb);
+      matches.add(new String(value));
     }
 
     if (maxDist > 0) {
-      matches.addAll(fuzzyMatches(xs, p + i + 1, offset + i + 1, maxDist - 1));  // replaced
-      matches.addAll(fuzzyMatches(xs, p + i + 1, offset + i, maxDist - 1));  // inserted
-      matches.addAll(fuzzyMatches(xs, p + i, offset + i + 1, maxDist - 1));  // deleted
+      // if something was replaced
+      matches.addAll(fuzzyMatches(xs, p + i + 1, offset + i + 1, maxDist - 1));
+
+      // if something was inserted
+      matches.addAll(fuzzyMatches(xs, p + i + 1, offset + i, maxDist - 1));
+
+      // if something was deleted
+      matches.addAll(fuzzyMatches(xs, p + i, offset + i + 1, maxDist - 1));
     }
 
     if (value.length - offset - i == 0) {
       for (LexDistTrie child : cons) {
-        final Set<StringBuilder> suffixes = child.fuzzyMatches(xs, p + i, 0, maxDist);
-        for (StringBuilder suffix : suffixes) {
-          matches.add(suffix.insert(0, value));
+        final Set<String> suffixes =
+            child.fuzzyMatches(xs, p + i, 0, maxDist);
+        for (String suffix : suffixes) {
+          matches.add(new String(value) + suffix);
         }
       }
     }
@@ -171,6 +202,7 @@ public class LexDistTrie implements Trie<String>, Serializable {
     }
   }
 
+  @Override
   public int size() {
     int acc = end ? 1 : 0;
     for (LexDistTrie trie : cons) {
@@ -181,62 +213,71 @@ public class LexDistTrie implements Trie<String>, Serializable {
 
   @Override
   public boolean isEmpty() {
-    return false;
+    return value.length == 0 && !end && cons.isEmpty();
   }
 
   @Override
-  public boolean contains(Object o) {
-    return false;
+  public Iterator<String> iterator() {
+    return getAllParts().iterator();
   }
 
-  @Override
-  public Iterator iterator() {
-    return null;
+  private List<String> getAllParts() {
+    final String base = new String(value);
+    if (cons.isEmpty()) {
+      return Collections.singletonList(base);
+    } else {
+      final List<String> xs = new LinkedList<>();
+      if (end) {
+        xs.add(base);
+      }
+      for (LexDistTrie trie : cons) {
+        for (String s : trie.getAllParts()) {
+          xs.add(base + s);
+        }
+      }
+      return xs;
+    }
   }
 
   @Override
   public Object[] toArray() {
-    return new Object[0];
-  }
-
-  @Override
-  public boolean add(Object o) {
-    return false;
-  }
-
-  @Override
-  public boolean remove(Object o) {
-    return false;
-  }
-
-  @Override
-  public boolean addAll(Collection c) {
-    return false;
+    final Object[] array = new Object[size()];
+    return toArray(array);
   }
 
   @Override
   public void clear() {
-
+    value = new char[0];
+    end = false;
+    cons.clear();
   }
 
   @Override
-  public boolean retainAll(Collection c) {
-    return false;
-  }
+  @SuppressWarnings("unchecked")
+  public <T> T[] toArray(T[] a) {
+    if (a == null) {
+      throw new NullPointerException("destination cannot be null");
+    }
+    if (a.getClass() != String[].class) {
+      throw new ArrayStoreException("destination is not a String[]");
+    }
 
-  @Override
-  public boolean removeAll(Collection c) {
-    return false;
-  }
+    int i;
+    final Iterator<String> iter = iterator();
+    for (i = 0; iter.hasNext() && i < a.length; i += 1) {
+      a[i] = (T) iter.next();
+    }
 
-  @Override
-  public boolean containsAll(Collection c) {
-    return false;
-  }
+    if (i < a.length) {
+      a[i] = null;
+    } else if (iter.hasNext()) {
+      final T[] bs = (T[]) new String[size()];
+      System.arraycopy(a, 0, bs, 0, i + 1);
 
-  @Override
-  public Object[] toArray(Object[] a) {
-    return new Object[0];
+      return bs;
+    }
+
+    return a;
   }
 
   public int nodeCount() {
@@ -247,8 +288,9 @@ public class LexDistTrie implements Trie<String>, Serializable {
     return acc;
   }
 
-  public boolean contains(String xs) {
-    return fuzzyContains(xs, 0);
+  @Override
+  public boolean contains(Object xs) {
+    return xs instanceof String && fuzzyContains((String) xs, 0);
   }
 
   @Override

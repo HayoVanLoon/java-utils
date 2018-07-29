@@ -6,6 +6,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -158,13 +160,36 @@ public class LexDistTrieTest {
         toSet(trie.fuzzyMatches("XttngX", 3)));
   }
 
+  @Test
+  public void iterator() {
+    final LexDistTrie trie = new LexDistTrie();
+    trie.add("ketting");
+    trie.add("ketel");
+
+    final Iterator<String> iter = trie.iterator();
+    for (int i = 0; iter.hasNext(); i += 1) {
+      Assert.assertEquals(new String[]{"ketting", "ketel"}[i], iter.next());
+    }
+
+    final Set a = toSet(create());
+    final Set expected = toSet(new String[]{"kettingkast", "kettingslot",
+        "kettingslotkraker", "fietsketting", "ketel", "ketting",
+        "kettingkast"});
+
+    Assert.assertEquals(expected, a);
+  }
+
   private static <T> Set<T> toSet(T[] array) {
     return Arrays.stream(array).collect(Collectors.toSet());
   }
 
-    private static <T> Set<T> toSet(Iterable<T> iterable) {
+  private static <T> Set<T> toSet(Iterable<T> iterable) {
+    return toSet(iterable.iterator());
+  }
+
+  private static <T> Set<T> toSet(Iterator<T> iterator) {
     final Set<T> set = new TreeSet<>();
-    iterable.forEach(set::add);
+    iterator.forEachRemaining(set::add);
     return set;
   }
 }
