@@ -1,6 +1,8 @@
 package nl.hayovanloon.collect.trie;
 
-public interface Trie<T> {
+import java.util.Collection;
+
+public interface Trie<T> extends Collection {
 
   boolean fuzzyContains(T t, int distance);
 

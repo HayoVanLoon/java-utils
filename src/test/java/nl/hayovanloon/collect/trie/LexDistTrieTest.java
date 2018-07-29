@@ -153,7 +153,6 @@ public class LexDistTrieTest {
         toSet(new String[]{"ketting", "kettingslot", "ketel", "kettingkast"}),
         toSet(trie.fuzzyMatches("kXtting", 5)));
 
-    System.out.println("-XttngX/3: " + trie.fuzzyMatches("XttngX", 3));
     Assert.assertEquals(
         toSet(new String[]{}),
         toSet(trie.fuzzyMatches("XttngX", 3)));
