@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+// TODO: move test cases to tests
 public class RedBlack<T> implements Collection<T> {
 
   private Comparator<T> comparator;

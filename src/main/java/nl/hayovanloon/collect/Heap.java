@@ -1,5 +1,8 @@
+package nl.hayovanloon.collect;
+
 import java.util.Arrays;
 
+// TODO: move test cases to tests
 public class Heap {
 
   private static final int DEFAULT_SIZE = 4;
